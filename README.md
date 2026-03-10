@@ -4,7 +4,7 @@ Dashboard interactivo con los principales indicadores del sector minero peruano,
 
 ## Demo en vivo
 
-**[Ver Dashboard](https://TU_USUARIO.github.io/mineria-peru-dashboard/)**
+**[Ver Dashboard]([https://TU_USUARIO.github.io/mineria-peru-dashboard/](https://MaxAntony23.github.io/mineria-peru-dashboard/))**
 
 ![Preview del Dashboard](preview.png)
 
