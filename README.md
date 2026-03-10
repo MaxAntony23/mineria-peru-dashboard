@@ -61,7 +61,7 @@ Los datos son referenciales basados en fuentes oficiales:
 Clona el repositorio y abre el archivo en tu navegador:
 
 ```bash
-git clone https://github.com/TU_USUARIO/mineria-peru-dashboard.git
+git clone https://github.com/MaxAntony23/mineria-peru-dashboard.git
 cd mineria-peru-dashboard
 # Abre mineria-peru-dashboard.html en tu navegador
 ```
@@ -71,7 +71,7 @@ cd mineria-peru-dashboard
 El dashboard está publicado automáticamente en GitHub Pages. Ve a:
 
 ```
-https://TU_USUARIO.github.io/mineria-peru-dashboard/
+https://MaxAntony23.github.io/mineria-peru-dashboard/
 ```
 
 ---
