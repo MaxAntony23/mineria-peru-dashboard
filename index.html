@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Minería Peru</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --bg-dark:    #0b0f1a;
+      --bg-card:    #111827;
+      --bg-card2:   #151e2f;
+      --accent:     #f5c518;
+      --accent2:    #3b82f6;
+      --accent3:    #10b981;
+      --accent4:    #ec4899;
+      --accent5:    #8b5cf6;
+      --text:       #e5e7eb;
+      --text-muted: #6b7280;
+      --border:     #1f2937;
+      --copper:     #b87333;
+      --gold:       #ffd700;
+      --silver:     #c0c0c0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── PARTICLES ── */
+    #particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+    /* ── LAYOUT ── */
+    .wrapper { position: relative; z-index: 1; max-width: 1600px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ── HEADER ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+      padding: 24px 32px; border-radius: 16px;
+      background: linear-gradient(135deg, #111827 0%, #1a2540 50%, #0f1e38 100%);
+      border: 1px solid #1f3460;
+      margin-bottom: 28px;
+      animation: slideDown .7s ease;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), #e67e00);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 0 24px rgba(245,197,24,.35);
+      animation: pulse 3s infinite;
+    }
+    header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -.5px; }
+    header h1 span { color: var(--accent); }
+    header p { font-size: .85rem; color: var(--text-muted); margin-top: 2px; }
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3);
+      border-radius: 20px; padding: 4px 12px; font-size: .78rem; color: var(--accent3);
+    }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent3); animation: blink 1.2s infinite; }
+    .date-label { font-size: .82rem; color: var(--text-muted); }
+
+    /* ── KPI CARDS ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 20px 22px; position: relative; overflow: hidden;
+      animation: fadeUp .6s ease both;
+      transition: transform .25s, box-shadow .25s;
+      cursor: default;
+    }
+    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.5); }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--card-color, var(--accent));
+    }
+    .kpi-card .icon {
+      width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 20px; margin-bottom: 12px;
+      background: color-mix(in srgb, var(--card-color, var(--accent)) 15%, transparent);
+    }
+    .kpi-label { font-size: .78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; }
+    .kpi-value { font-size: 1.8rem; font-weight: 700; margin: 4px 0; letter-spacing: -1px; color: var(--card-color, var(--text)); }
+    .kpi-sub { font-size: .8rem; color: var(--text-muted); }
+    .kpi-change { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; margin-top: 6px; }
+    .kpi-change.up { color: var(--accent3); }
+    .kpi-change.down { color: #ef4444; }
+
+    /* ── CHART GRID ── */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .chart-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 22px; animation: fadeUp .7s ease both;
+      transition: box-shadow .25s;
+    }
+    .chart-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,.4); }
+    .chart-card.col-7 { grid-column: span 7; }
+    .chart-card.col-5 { grid-column: span 5; }
+    .chart-card.col-6 { grid-column: span 6; }
+    .chart-card.col-4 { grid-column: span 4; }
+    .chart-card.col-8 { grid-column: span 8; }
+    .chart-card.col-12 { grid-column: span 12; }
+
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+    .card-title { font-size: 1rem; font-weight: 600; }
+    .card-subtitle { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+    .card-badge {
+      font-size: .72rem; padding: 3px 10px; border-radius: 20px;
+      background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3); color: var(--accent2);
+    }
+
+    canvas { max-width: 100%; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th {
+      text-align: left; padding: 10px 14px; color: var(--text-muted);
+      font-size: .75rem; text-transform: uppercase; letter-spacing: .7px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .2s; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody td { padding: 12px 14px; }
+    .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; font-size: .75rem; font-weight: 700; }
+    .mineral-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    .bar-mini { height: 6px; border-radius: 3px; background: var(--accent2); opacity: .7; transition: width .8s ease; }
+    .tag { font-size: .72rem; padding: 2px 8px; border-radius: 4px; }
+
+    /* ── GAUGE ── */
+    .gauge-row { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin-top: 10px; }
+    .gauge-item { text-align: center; }
+    .gauge-label { font-size: .8rem; color: var(--text-muted); margin-top: 8px; }
+    .gauge-val { font-size: 1.1rem; font-weight: 700; }
+
+    /* ── SPARKLINE REGION ── */
+    .region-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-top: 10px; }
+    .region-card { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .region-name { font-size: .82rem; font-weight: 600; }
+    .region-mineral { font-size: .73rem; color: var(--text-muted); margin-top: 2px; }
+    .region-val { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-top: 8px; }
+    .region-sub { font-size: .72rem; color: var(--text-muted); }
+
+    /* ── PRICE TICKER ── */
+    .ticker-bar {
+      display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 24px; margin-bottom: 28px;
+      animation: fadeUp .5s ease both;
+    }
+    .ticker-item { display: flex; align-items: center; gap: 10px; }
+    .ticker-mineral { font-size: .78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; }
+    .ticker-price { font-size: 1rem; font-weight: 700; }
+    .ticker-change { font-size: .8rem; }
+    .ticker-change.up { color: var(--accent3); }
+    .ticker-change.down { color: #ef4444; }
+    .ticker-sep { width: 1px; height: 32px; background: var(--border); }
+
+    /* ── FOOTER ── */
+    footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: .78rem; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 20px rgba(245,197,24,.3); } 50% { box-shadow: 0 0 36px rgba(245,197,24,.6); } }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .2; } }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    .kpi-card:nth-child(1) { animation-delay: .05s; }
+    .kpi-card:nth-child(2) { animation-delay: .10s; }
+    .kpi-card:nth-child(3) { animation-delay: .15s; }
+    .kpi-card:nth-child(4) { animation-delay: .20s; }
+    .kpi-card:nth-child(5) { animation-delay: .25s; }
+    .kpi-card:nth-child(6) { animation-delay: .30s; }
+
+    /* ── TOOLTIP CUSTOM ── */
+    .tooltip-box {
+      position: absolute; background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      padding: 8px 12px; pointer-events: none; display: none; z-index: 99;
+      font-size: .8rem; white-space: nowrap;
+    }
+
+    /* ── TABS ── */
+    .tab-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn {
+      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); font-size: .8rem; cursor: pointer;
+      transition: all .2s;
+    }
+    .tab-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+    .tab-btn:hover:not(.active) { border-color: var(--accent2); color: var(--text); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+
+    @media (max-width: 900px) {
+      .chart-card.col-7, .chart-card.col-5, .chart-card.col-6,
+      .chart-card.col-4, .chart-card.col-8 { grid-column: span 12; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="header-icon">⛏</div>
+      <div>
+        <h1>Dashboard <span>Minería Perú</span></h1>
+        <p>Indicadores del sector minero — Datos 2024–2025</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div> Actualizado</div>
+      <div class="date-label">Marzo 2025 &nbsp;|&nbsp; MINEM · BCRP · Kitco</div>
+    </div>
+  </header>
+
+  <!-- TICKER -->
+  <div class="ticker-bar">
+    <div class="ticker-item">
+      <span style="font-size:20px">🥇</span>
+      <div>
+        <div class="ticker-mineral">Oro (XAU)</div>
+        <div class="ticker-price" style="color:var(--gold)">$2,912 <span style="font-size:.75rem">/ oz</span></div>
+      </div>
+      <div class="ticker-change up">▲ +3.2%</div>
+    </div>
+    <div class="ticker-sep"></div>
+    <div class="ticker-item">
+      <span style="font-size:20px">🥈</span>
+      <div>
+        <div class="ticker-mineral">Plata (XAG)</div>
+        <div class="ticker-price" style="color:var(--silver)">$32.45 <span style="font-size:.75rem">/ oz</span></div>
+      </div>
+      <div class="ticker-change up">▲ +1.8%</div>
+    </div>
+    <div class="ticker-sep"></div>
+    <div class="ticker-item">
+      <span style="font-size:20px">🔶</span>
+      <div>
+        <div class="ticker-mineral">Cobre (Cu)</div>
+        <div class="ticker-price" style="color:var(--copper)">$4.38 <span style="font-size:.75rem">/ lb</span></div>
+      </div>
+      <div class="ticker-change down">▼ -0.4%</div>
+    </div>
+    <div class="ticker-sep"></div>
+    <div class="ticker-item">
+      <span style="font-size:20px">🔷</span>
+      <div>
+        <div class="ticker-mineral">Zinc (Zn)</div>
+        <div class="ticker-price" style="color:#60a5fa">$1.26 <span style="font-size:.75rem">/ lb</span></div>
+      </div>
+      <div class="ticker-change up">▲ +0.9%</div>
+    </div>
+    <div class="ticker-sep"></div>
+    <div class="ticker-item">
+      <span style="font-size:20px">⬛</span>
+      <div>
+        <div class="ticker-mineral">Plomo (Pb)</div>
+        <div class="ticker-price" style="color:#9ca3af">$0.94 <span style="font-size:.75rem">/ lb</span></div>
+      </div>
+      <div class="ticker-change down">▼ -0.2%</div>
+    </div>
+    <div class="ticker-sep"></div>
+    <div class="ticker-item">
+      <span style="font-size:20px">🟣</span>
+      <div>
+        <div class="ticker-mineral">Molibdeno (Mo)</div>
+        <div class="ticker-price" style="color:#a78bfa">$21.80 <span style="font-size:.75rem">/ lb</span></div>
+      </div>
+      <div class="ticker-change up">▲ +2.1%</div>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--card-color:#ffd700">
+      <div class="icon">🥇</div>
+      <div class="kpi-label">Producción de Oro</div>
+      <div class="kpi-value">2.78M</div>
+      <div class="kpi-sub">oz troy / año (2024)</div>
+      <div class="kpi-change up">▲ +4.6% vs 2023</div>
+    </div>
+    <div class="kpi-card" style="--card-color:#b87333">
+      <div class="icon">🔶</div>
+      <div class="kpi-label">Producción de Cobre</div>
+      <div class="kpi-value">2.76M</div>
+      <div class="kpi-sub">TM métricas / año</div>
+      <div class="kpi-change up">▲ +7.2% vs 2023</div>
+    </div>
+    <div class="kpi-card" style="--card-color:#3b82f6">
+      <div class="icon">💰</div>
+      <div class="kpi-label">Exportaciones Mineras</div>
+      <div class="kpi-value">$38.2B</div>
+      <div class="kpi-sub">USD / año (2024)</div>
+      <div class="kpi-change up">▲ +12.4% vs 2023</div>
+    </div>
+    <div class="kpi-card" style="--card-color:#10b981">
+      <div class="icon">📊</div>
+      <div class="kpi-label">% PBI Nacional</div>
+      <div class="kpi-value">10.4%</div>
+      <div class="kpi-sub">Aporte al PBI peruano</div>
+      <div class="kpi-change up">▲ +0.8pp vs 2023</div>
+    </div>
+    <div class="kpi-card" style="--card-color:#ec4899">
+      <div class="icon">👷</div>
+      <div class="kpi-label">Empleos Directos</div>
+      <div class="kpi-value">207K</div>
+      <div class="kpi-sub">Trabajadores directos</div>
+      <div class="kpi-change up">▲ +3.1% vs 2023</div>
+    </div>
+    <div class="kpi-card" style="--card-color:#8b5cf6">
+      <div class="icon">🌎</div>
+      <div class="kpi-label">Ranking Mundial</div>
+      <div class="kpi-value">#2</div>
+      <div class="kpi-sub">Productor de plata y zinc</div>
+      <div class="kpi-change up">▲ Top 5 en 6 minerales</div>
+    </div>
+  </div>
+
+  <!-- ROW 1 -->
+  <div class="chart-grid">
+
+    <!-- Gold Price History -->
+    <div class="chart-card col-7">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Precio del Oro — Evolución Histórica</div>
+          <div class="card-subtitle">USD por onza troy (XAU) · 2018–2025</div>
+        </div>
+        <div class="card-badge">Interactivo</div>
+      </div>
+      <div class="tab-row" id="goldTabs">
+        <button class="tab-btn active" data-range="all">Todo</button>
+        <button class="tab-btn" data-range="3y">3 años</button>
+        <button class="tab-btn" data-range="1y">1 año</button>
+      </div>
+      <canvas id="goldChart" height="220"></canvas>
+    </div>
+
+    <!-- Donut Market Share -->
+    <div class="chart-card col-5">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Empresas Mineras — Cuota de Mercado</div>
+          <div class="card-subtitle">Por valor de exportación 2024</div>
+        </div>
+      </div>
+      <canvas id="donutChart" height="260"></canvas>
+    </div>
+
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="chart-grid">
+
+    <!-- Mineral Production Bar -->
+    <div class="chart-card col-6">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Producción por Mineral</div>
+          <div class="card-subtitle">Miles de TM métricas · 2024</div>
+        </div>
+      </div>
+      <canvas id="barChart" height="260"></canvas>
+    </div>
+
+    <!-- Radar Ranking Mundial -->
+    <div class="chart-card col-6">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Ranking Mundial — Perú</div>
+          <div class="card-subtitle">Posición por mineral (menor = mejor)</div>
+        </div>
+      </div>
+      <canvas id="radarChart" height="260"></canvas>
+    </div>
+
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="chart-grid">
+
+    <!-- Stacked Area: Production trend -->
+    <div class="chart-card col-8">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Tendencia de Producción Minera</div>
+          <div class="card-subtitle">Miles de TM métricas — Cobre, Zinc, Plata · 2016–2024</div>
+        </div>
+      </div>
+      <canvas id="areaChart" height="220"></canvas>
+    </div>
+
+    <!-- Horizontal bar: Exportaciones por empresa -->
+    <div class="chart-card col-4">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Top Regiones Productoras</div>
+          <div class="card-subtitle">% del total nacional (2024)</div>
+        </div>
+      </div>
+      <canvas id="regionChart" height="260"></canvas>
+    </div>
+
+  </div>
+
+  <!-- ROW 4 – TABLE -->
+  <div class="chart-grid">
+    <div class="chart-card col-12">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Top 10 Empresas Mineras en Perú</div>
+          <div class="card-subtitle">Producción, mineral principal y exportaciones estimadas 2024</div>
+        </div>
+        <div class="card-badge">2024</div>
+      </div>
+      <div class="table-wrap">
+        <table id="companyTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Empresa</th>
+              <th>Mineral Principal</th>
+              <th>Región</th>
+              <th>Producción</th>
+              <th>Export. USD</th>
+              <th>Participación</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5 – BUBBLE (Valor vs Volumen) -->
+  <div class="chart-grid">
+    <div class="chart-card col-7">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Volumen vs Valor de Exportación por Mineral</div>
+          <div class="card-subtitle">Burbuja = importancia económica relativa · 2024</div>
+        </div>
+      </div>
+      <canvas id="bubbleChart" height="260"></canvas>
+    </div>
+
+    <div class="chart-card col-5">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Ingresos Fiscales Mineros</div>
+          <div class="card-subtitle">Impuesto a la renta + regalías · Millones USD</div>
+        </div>
+      </div>
+      <canvas id="fiscalChart" height="260"></canvas>
+    </div>
+  </div>
+
+  <!-- REGIONS CARDS -->
+  <div class="chart-card col-12" style="margin-bottom:24px; animation: fadeUp .8s ease both;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Regiones Clave y su Principal Mineral</div>
+        <div class="card-subtitle">Producción destacada por región (2024)</div>
+      </div>
+    </div>
+    <div class="region-grid" id="regionCards"></div>
+  </div>
+
+  <footer>
+    Dashboard Minería Peru &nbsp;·&nbsp; Datos: MINEM, BCRP, Kitco, InfoMine &nbsp;·&nbsp; Actualizado Marzo 2025
+  </footer>
+
+</div>
+
+<script>
+/* ═══════════════════════ PARTICLES ═══════════════════════ */
+(function() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['rgba(245,197,24,.35)','rgba(59,130,246,.3)','rgba(16,185,129,.25)','rgba(139,92,246,.25)'];
+  for (let i = 0; i < 55; i++) {
+    particles.push({
+      x: Math.random()*1600, y: Math.random()*900,
+      r: Math.random()*2.5+.5, vx: (Math.random()-.5)*.25, vy: (Math.random()-.5)*.25,
+      col: COLORS[Math.floor(Math.random()*COLORS.length)]
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.col; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ═══════════════════════ CHART DEFAULTS ═══════════════════════ */
+Chart.defaults.color = '#9ca3af';
+Chart.defaults.borderColor = '#1f2937';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+/* ═══════════════════════ DATA ═══════════════════════ */
+const GOLD_DATA = {
+  all:  { labels: ['2018','2019','2020','2021','2022','2023','2024','Mar-25'],
+          data:   [1268, 1393, 1773, 1798, 1800, 1942, 2326, 2912] },
+  '3y': { labels: ['2022','2023','2024','Mar-25'],
+          data:   [1800, 1942, 2326, 2912] },
+  '1y': { labels: ['Abr-24','Jun-24','Ago-24','Oct-24','Dic-24','Feb-25','Mar-25'],
+          data:   [2320, 2340, 2490, 2740, 2630, 2880, 2912] }
+};
+
+const COMPANIES = [
+  { rank:1, name:'Antamina', mineral:'Cobre / Zinc',  region:'Áncash',    prod:'450K TM',  exp:'6.2B', share:16.2, status:'Activo' },
+  { rank:2, name:'Cerro Verde', mineral:'Cobre',      region:'Arequipa',  prod:'410K TM',  exp:'5.8B', share:15.2, status:'Activo' },
+  { rank:3, name:'Las Bambas', mineral:'Cobre',       region:'Apurímac',  prod:'380K TM',  exp:'5.1B', share:13.4, status:'Activo' },
+  { rank:4, name:'Southern Peru (Toquepala)', mineral:'Cobre', region:'Tacna', prod:'320K TM', exp:'4.3B', share:11.3, status:'Activo' },
+  { rank:5, name:'Yanacocha', mineral:'Oro',          region:'Cajamarca', prod:'620K oz',  exp:'1.9B', share:5.0,  status:'Activo' },
+  { rank:6, name:'Buenaventura', mineral:'Oro / Plata', region:'Lima',   prod:'510K oz',  exp:'1.4B', share:3.7,  status:'Activo' },
+  { rank:7, name:'Hochschild Mining', mineral:'Plata / Oro', region:'Arequipa', prod:'15M oz plata', exp:'1.2B', share:3.1, status:'Activo' },
+  { rank:8, name:'Gold Fields Cerro Corona', mineral:'Oro', region:'Cajamarca', prod:'380K oz', exp:'1.1B', share:2.9, status:'Activo' },
+  { rank:9, name:'Volcan Compañía Minera', mineral:'Zinc / Plata', region:'Junín', prod:'320K TM zinc', exp:'0.9B', share:2.4, status:'Activo' },
+  { rank:10, name:'Minsur (San Rafael)', mineral:'Estaño', region:'Puno', prod:'22K TM', exp:'0.7B', share:1.8, status:'Activo' },
+];
+
+const COLORS_MINERALS = ['#b87333','#ffd700','#c0c0c0','#60a5fa','#6b7280','#8b5cf6','#f97316'];
+
+/* ═══════════════════════ GOLD CHART ═══════════════════════ */
+let goldChart;
+function buildGoldChart(range='all') {
+  const d = GOLD_DATA[range];
+  if (goldChart) goldChart.destroy();
+  const grad = document.getElementById('goldChart').getContext('2d').createLinearGradient(0,0,0,300);
+  grad.addColorStop(0,'rgba(255,215,0,.35)');
+  grad.addColorStop(1,'rgba(255,215,0,0)');
+
+  goldChart = new Chart('goldChart', {
+    type: 'line',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Precio Oro (USD/oz)',
+        data: d.data,
+        borderColor: '#ffd700',
+        backgroundColor: grad,
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#ffd700',
+        pointBorderColor: '#0b0f1a',
+        pointBorderWidth: 2,
+        fill: true,
+        tension: .4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      animation: { duration: 900, easing: 'easeInOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+          titleColor: '#9ca3af', bodyColor: '#e5e7eb', padding: 12,
+          callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString()} / oz` }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#1f2937' } },
+        y: {
+          grid: { color: '#1f2937' },
+          ticks: { callback: v => '$'+v.toLocaleString() }
+        }
+      }
+    }
+  });
+}
+buildGoldChart('all');
+
+document.querySelectorAll('#goldTabs .tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#goldTabs .tab-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    buildGoldChart(this.dataset.range);
+  });
+});
+
+/* ═══════════════════════ DONUT CHART ═══════════════════════ */
+new Chart('donutChart', {
+  type: 'doughnut',
+  data: {
+    labels: ['Antamina','Cerro Verde','Las Bambas','Southern Peru','Yanacocha','Buenaventura','Hochschild','Otros'],
+    datasets: [{
+      data: [16.2, 15.2, 13.4, 11.3, 5.0, 3.7, 3.1, 32.1],
+      backgroundColor: ['#3b82f6','#b87333','#10b981','#f97316','#ffd700','#ec4899','#8b5cf6','#374151'],
+      borderColor: '#0b0f1a',
+      borderWidth: 3,
+      hoverOffset: 10
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true, cutout: '62%',
+    animation: { animateRotate: true, duration: 1200 },
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { boxWidth: 10, padding: 10, font: { size: 11 } }
+      },
+      tooltip: {
+        backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════ BAR CHART ═══════════════════════ */
+new Chart('barChart', {
+  type: 'bar',
+  data: {
+    labels: ['Cobre','Zinc','Plata','Hierro','Plomo','Oro*','Estaño','Molibdeno'],
+    datasets: [{
+      label: 'Miles TM (2024)',
+      data: [2760, 1470, 3500, 10600, 330, 86, 22, 30],
+      backgroundColor: ['#b87333','#60a5fa','#c0c0c0','#6b7280','#4b5563','#ffd700','#f97316','#8b5cf6'],
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    animation: { duration: 1000, easing: 'easeOutBounce' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} miles TM` }
+      }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        grid: { color: '#1f2937' },
+        ticks: { callback: v => v >= 1000 ? (v/1000)+'K' : v }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════ RADAR ═══════════════════════ */
+new Chart('radarChart', {
+  type: 'radar',
+  data: {
+    labels: ['Plata (#1)','Zinc (#2)','Plomo (#2)','Estaño (#3)','Cobre (#3)','Oro (#5)','Hierro (#7)'],
+    datasets: [
+      {
+        label: 'Ranking Perú 2024',
+        data: [1, 2, 2, 3, 3, 5, 7],
+        borderColor: '#f5c518',
+        backgroundColor: 'rgba(245,197,24,.15)',
+        pointBackgroundColor: '#f5c518',
+        pointBorderColor: '#0b0f1a',
+        borderWidth: 2.5,
+        pointRadius: 5
+      },
+      {
+        label: 'Ranking promedio región',
+        data: [4, 5, 5, 6, 4, 6, 8],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,.1)',
+        pointBackgroundColor: '#3b82f6',
+        pointBorderColor: '#0b0f1a',
+        borderWidth: 2,
+        pointRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    animation: { duration: 1200 },
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } },
+      tooltip: { backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1 }
+    },
+    scales: {
+      r: {
+        min: 0, max: 10, reverse: true,
+        grid: { color: '#1f2937' },
+        pointLabels: { font: { size: 11 }, color: '#9ca3af' },
+        ticks: { stepSize: 2, color: '#6b7280', backdropColor: 'transparent' }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════ AREA CHART ═══════════════════════ */
+const AREA_LABELS = ['2016','2017','2018','2019','2020','2021','2022','2023','2024'];
+function makeGrad(ctx, color1, color2) {
+  const g = ctx.createLinearGradient(0,0,0,300);
+  g.addColorStop(0, color1); g.addColorStop(1, color2); return g;
+}
+const areaCtx = document.getElementById('areaChart').getContext('2d');
+new Chart(areaCtx, {
+  type: 'line',
+  data: {
+    labels: AREA_LABELS,
+    datasets: [
+      {
+        label: 'Cobre (miles TM)',
+        data: [2354,2445,2437,2456,2149,2196,2587,2761,2760],
+        borderColor: '#b87333',
+        backgroundColor: makeGrad(areaCtx,'rgba(184,115,51,.4)','rgba(184,115,51,0)'),
+        fill: true, tension: .4, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7
+      },
+      {
+        label: 'Zinc (miles TM)',
+        data: [1254,1330,1474,1404,1241,1279,1346,1472,1470],
+        borderColor: '#60a5fa',
+        backgroundColor: makeGrad(areaCtx,'rgba(96,165,250,.3)','rgba(96,165,250,0)'),
+        fill: true, tension: .4, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7
+      },
+      {
+        label: 'Plata (miles TM)',
+        data: [4100,4300,3900,3900,3400,3300,3400,3420,3500],
+        borderColor: '#c0c0c0',
+        backgroundColor: makeGrad(areaCtx,'rgba(192,192,192,.2)','rgba(192,192,192,0)'),
+        fill: true, tension: .4, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    animation: { duration: 1100, easing: 'easeInOutCubic' },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, padding: 16, font: { size: 11 } } },
+      tooltip: {
+        backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+        titleColor: '#9ca3af', bodyColor: '#e5e7eb', padding: 12
+      }
+    },
+    scales: {
+      x: { grid: { color: '#1f2937' } },
+      y: { grid: { color: '#1f2937' }, ticks: { callback: v => v.toLocaleString() } }
+    }
+  }
+});
+
+/* ═══════════════════════ REGION HORIZONTAL BAR ═══════════════════════ */
+new Chart('regionChart', {
+  type: 'bar',
+  data: {
+    labels: ['Áncash','Arequipa','Apurímac','Cajamarca','Junín','Puno','Lima','Tacna'],
+    datasets: [{
+      label: '% Producción nacional',
+      data: [24.1, 18.6, 15.8, 12.4, 8.7, 6.2, 5.8, 8.4],
+      backgroundColor: ['#3b82f6','#b87333','#10b981','#ffd700','#8b5cf6','#ec4899','#f97316','#60a5fa'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: true,
+    animation: { duration: 1000 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.parsed.x}% del total` }
+      }
+    },
+    scales: {
+      x: { grid: { color: '#1f2937' }, ticks: { callback: v => v+'%' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+/* ═══════════════════════ BUBBLE CHART ═══════════════════════ */
+new Chart('bubbleChart', {
+  type: 'bubble',
+  data: {
+    datasets: [
+      { label:'Cobre',   data:[{x:2760, y:38.2, r:28}], backgroundColor:'rgba(184,115,51,.75)',   borderColor:'#b87333' },
+      { label:'Oro',     data:[{x:86,   y:18.4, r:20}], backgroundColor:'rgba(255,215,0,.7)',     borderColor:'#ffd700' },
+      { label:'Zinc',    data:[{x:1470, y:8.6,  r:15}], backgroundColor:'rgba(96,165,250,.7)',    borderColor:'#60a5fa' },
+      { label:'Plata',   data:[{x:3500, y:7.2,  r:14}], backgroundColor:'rgba(192,192,192,.7)',   borderColor:'#c0c0c0' },
+      { label:'Plomo',   data:[{x:330,  y:2.1,  r:9}],  backgroundColor:'rgba(107,114,128,.7)',   borderColor:'#6b7280' },
+      { label:'Hierro',  data:[{x:10600,y:1.4,  r:8}],  backgroundColor:'rgba(239,68,68,.6)',     borderColor:'#ef4444' },
+      { label:'Estaño',  data:[{x:22,   y:1.8,  r:7}],  backgroundColor:'rgba(249,115,22,.7)',    borderColor:'#f97316' },
+      { label:'Molibdeno',data:[{x:30,  y:2.0,  r:7}],  backgroundColor:'rgba(139,92,246,.7)',    borderColor:'#8b5cf6' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    animation: { duration: 1200 },
+    plugins: {
+      legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } },
+      tooltip: {
+        backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+        callbacks: {
+          label: ctx => [
+            ` ${ctx.dataset.label}`,
+            ` Volumen: ${ctx.parsed.x.toLocaleString()} miles TM`,
+            ` Export: $${ctx.parsed.y}B USD`
+          ]
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#1f2937' },
+        title: { display: true, text: 'Producción (miles TM)', color: '#6b7280', font: { size: 11 } },
+        ticks: { callback: v => v >= 1000 ? (v/1000)+'K' : v }
+      },
+      y: {
+        grid: { color: '#1f2937' },
+        title: { display: true, text: 'Export. (Mil millones USD)', color: '#6b7280', font: { size: 11 } },
+        ticks: { callback: v => '$'+v+'B' }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════ FISCAL CHART ═══════════════════════ */
+new Chart('fiscalChart', {
+  type: 'bar',
+  data: {
+    labels: ['2018','2019','2020','2021','2022','2023','2024'],
+    datasets: [
+      {
+        label: 'Impuesto Renta',
+        data: [3800, 4100, 3200, 5900, 7800, 6400, 8200],
+        backgroundColor: 'rgba(59,130,246,.75)',
+        borderRadius: 4,
+        stack: 'a'
+      },
+      {
+        label: 'Regalías Mineras',
+        data: [820, 890, 710, 1240, 1650, 1380, 1740],
+        backgroundColor: 'rgba(16,185,129,.75)',
+        borderRadius: 4,
+        stack: 'a'
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    animation: { duration: 1000 },
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } },
+      tooltip: {
+        backgroundColor: '#1f2937', borderColor: '#374151', borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString()}M` }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, stacked: true },
+      y: { grid: { color: '#1f2937' }, stacked: true, ticks: { callback: v => '$'+v/1000+'B' } }
+    }
+  }
+});
+
+/* ═══════════════════════ TABLE ═══════════════════════ */
+const RANK_COLORS = ['#ffd700','#c0c0c0','#b87333','#9ca3af','#9ca3af','#9ca3af','#9ca3af','#9ca3af','#9ca3af','#9ca3af'];
+const MINERAL_COLORS = { 'Cobre':'#b87333','Zinc':'#60a5fa','Plata':'#c0c0c0','Oro':'#ffd700','Estaño':'#f97316' };
+
+const tbody = document.querySelector('#companyTable tbody');
+COMPANIES.forEach((c,i) => {
+  const mcolor = MINERAL_COLORS[c.mineral.split(' / ')[0]] || '#9ca3af';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><span class="rank-badge" style="background:${RANK_COLORS[i]}22;color:${RANK_COLORS[i]}">${c.rank}</span></td>
+    <td style="font-weight:600">${c.name}</td>
+    <td><span class="mineral-dot" style="background:${mcolor}"></span>${c.mineral}</td>
+    <td style="color:var(--text-muted)">${c.region}</td>
+    <td style="font-variant-numeric:tabular-nums">${c.prod}</td>
+    <td style="color:var(--accent3);font-weight:600">$${c.exp}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="bar-mini" style="width:${c.share*4}px;background:${mcolor}"></div>
+        <span style="font-size:.82rem">${c.share}%</span>
+      </div>
+    </td>
+    <td><span class="tag" style="background:rgba(16,185,129,.15);color:var(--accent3);border:1px solid rgba(16,185,129,.3)">${c.status}</span></td>
+  `;
+  tbody.appendChild(tr);
+});
+
+/* ═══════════════════════ REGION CARDS ═══════════════════════ */
+const REGIONS = [
+  { name:'Áncash',    mineral:'Cobre & Zinc',    val:'$6.2B', sub:'Antamina — 24.1% nac.', color:'#3b82f6' },
+  { name:'Arequipa',  mineral:'Cobre & Plata',   val:'$5.8B', sub:'Cerro Verde — 18.6%',   color:'#b87333' },
+  { name:'Apurímac',  mineral:'Cobre',           val:'$5.1B', sub:'Las Bambas — 15.8%',    color:'#10b981' },
+  { name:'Cajamarca', mineral:'Oro',             val:'$3.1B', sub:'Yanacocha — 12.4%',     color:'#ffd700' },
+  { name:'Junín',     mineral:'Zinc & Plata',    val:'$1.8B', sub:'Volcan — 8.7%',         color:'#8b5cf6' },
+  { name:'Puno',      mineral:'Estaño & Oro',    val:'$1.2B', sub:'Minsur — 6.2%',         color:'#ec4899' },
+  { name:'Lima',      mineral:'Plata & Oro',     val:'$1.1B', sub:'Buenaventura — 5.8%',   color:'#f97316' },
+  { name:'Tacna',     mineral:'Cobre & Molibdeno',val:'$1.8B',sub:'Southern Peru — 8.4%',  color:'#60a5fa' },
+];
+
+const rGrid = document.getElementById('regionCards');
+REGIONS.forEach(r => {
+  const div = document.createElement('div');
+  div.className = 'region-card';
+  div.style.borderTop = `3px solid ${r.color}`;
+  div.innerHTML = `
+    <div class="region-name" style="color:${r.color}">${r.name}</div>
+    <div class="region-mineral">${r.mineral}</div>
+    <div class="region-val">${r.val}</div>
+    <div class="region-sub">${r.sub}</div>
+  `;
+  rGrid.appendChild(div);
+});
+
+/* ═══════════════════════ ANIMATE KPI COUNTERS ═══════════════════════ */
+function animateCounter(el, target, prefix='', suffix='', decimals=0) {
+  let start = 0, dur = 1400;
+  const step = timestamp => {
+    if (!start) start = timestamp;
+    const p = Math.min((timestamp - start) / dur, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    const val = (ease * target).toFixed(decimals);
+    el.textContent = prefix + val + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// Intersection observer to trigger counters
+const kpiValues = document.querySelectorAll('.kpi-value');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const el = e.target;
+      const txt = el.textContent;
+      if (txt.includes('2.78')) animateCounter(el, 2.78, '', 'M', 2);
+      else if (txt.includes('2.76')) animateCounter(el, 2.76, '', 'M', 2);
+      else if (txt.includes('38.2')) animateCounter(el, 38.2, '$', 'B', 1);
+      else if (txt.includes('10.4')) animateCounter(el, 10.4, '', '%', 1);
+      else if (txt.includes('207')) animateCounter(el, 207, '', 'K', 0);
+      observer.unobserve(el);
+    }
+  });
+}, { threshold: .5 });
+
+kpiValues.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
